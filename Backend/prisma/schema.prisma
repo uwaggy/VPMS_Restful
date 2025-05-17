@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum VerificationStatus {
+  VERIFIED
+  PENDING
+  UNVERIFIED
+}
+
+enum PasswordResetStatus {
+  PENDING
+  IDLE
+}
+
+enum VehicleType {
+  CAR
+  MOTORCYCLE
+  TRUCK
+  VAN
+  BUS
+}
+
+enum VehicleSize {
+  SMALL
+  MEDIUM
+  LARGE
+  XLARGE
+}
+
+enum ParkingStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum LocationZone {
+  NORTH
+  SOUTH
+  EAST
+  WEST
+  CENTRAL
+}
+
+model File {
+  id           String   @id @default(uuid())
+  name         String
+  originalName String   @map("original_name")
+  url          String
+  mimeType     String   @map("mime_type")
+  size         Int
+  user         User?    @relation("UserProfilePicture", fields: [userId], references: [id])
+  userId       String?  @unique @map("user_id") // unique for one-to-one
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("files")
+}
+
+model User {
+  id                  String             @id @default(uuid())
+  fullName            String
+  email               String             @unique
+  password            String
+  phone               String?            @unique
+  role                Role               @default(USER)
+  profilePicture      File?              @relation("UserProfilePicture") // back relation
+  profilePictureId    String?            @map("profile_picture_id")
+  verificationStatus  VerificationStatus @default(UNVERIFIED) @map("verification_status")
+  verificationToken   String?            @map("verification_token")
+  verificationExpires DateTime?          @map("verification_expires")
+  resetToken          String?            @map("reset_token")
+  resetExpires        DateTime?          @map("reset_expires")
+  isActive            Boolean            @default(true) @map("is_active")
+  lastLogin           DateTime?          @map("last_login")
+
+  vehicles         Vehicle[] // one-to-many
+  requests         Request[] @relation("request_user") // user → their requests
+  requestsApproved Request[] @relation("request_approver") // user → requests they approved
+  logs             Log[] // one-to-many
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Vehicle {
+  id             String          @id @default(uuid())
+  plateNumber    String          @unique @map("plate_number")
+  type           VehicleType
+  brand          String?
+  size           VehicleSize
+  made           String
+  model          String
+  color          String
+  year            Int?
+  owner          User            @relation(fields: [ownerId], references: [id])
+  ownerId        String          @map("owner_id")
+  requests       Request[] // one-to-many
+  parkingRecords ParkingRecord[] // one-to-many
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  @@map("vehicles")
+}
+
+model ParkingSlot {
+  id                 String          @id @default(uuid())
+  code               String          @unique
+  zone               LocationZone
+  floor              Int             @default(1)
+  type               VehicleType
+  size               VehicleSize
+  status             ParkingStatus   @default(AVAILABLE)
+  hourlyRate         Float           @default(2.5) @map("hourly_rate")
+  isCovered          Boolean         @default(false) @map("is_covered")
+  hasCharger         Boolean         @default(false) @map("has_charger")
+  requests           Request[] // one-to-many
+  parkingRecords     ParkingRecord[] @relation("SlotForRecord")
+  parkingSpotRecords ParkingRecord[] @relation("ParkingSpotForRecord") // Added for the other side of ParkingSpotForRecord
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  @@map("parking_slots")
+}
+
+model Request {
+  id              String         @id @default(uuid())
+  user            User           @relation(fields: [userId], references: [id], name: "request_user")
+  userId          String         @map("user_id")
+  vehicle         Vehicle        @relation(fields: [vehicleId], references: [id])
+  vehicleId       String         @map("vehicle_id")
+  slot            ParkingSlot?   @relation(fields: [slotId], references: [id])
+  slotId          String?        @map("slot_id")
+  status          RequestStatus  @default(PENDING)
+  startTime       DateTime       @map("start_time")
+  endTime         DateTime       @map("end_time")
+  durationHours   Float          @map("duration_hours")
+  approvedBy      User?          @relation(fields: [approvedById], references: [id], name: "request_approver")
+  approvedById    String?        @map("approved_by_id")
+  rejectionReason String?        @map("rejection_reason")
+  parkingRecord   ParkingRecord? // Just the relation, no `@relation` attribute here
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  @@map("requests")
+}
+
+model ParkingRecord {
+  id        String   @id @default(uuid())
+  request   Request? @relation(fields: [requestId], references: [id])
+  requestId String?  @unique @map("request_id")
+
+  vehicle             Vehicle      @relation(fields: [vehicleId], references: [id])
+  vehicleId           String       @map("vehicle_id")
+  slot                ParkingSlot  @relation("SlotForRecord", fields: [slotId], references: [id])
+  slotId              String       @map("slot_id")
+  checkIn             DateTime     @default(now()) @map("check_in")
+  parkingSpotIdPrisma String?      @map("parking_spot_id_prisma")
+  parkingSpot         ParkingSlot? @relation("ParkingSpotForRecord", fields: [parkingSpotIdPrisma], references: [id])
+  checkOut            DateTime?    @map("check_out")
+  totalHours          Float?       @map("total_hours")
+  amountPaid          Float?       @map("amount_paid")
+  paymentMethod       String?      @map("payment_method")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+
+  @@map("parking_records")
+}
+
+model Log {
+  id         String   @id @default(uuid())
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  user       User?    @relation(fields: [userId], references: [id])
+  userId     String?  @map("user_id")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("logs")
+}

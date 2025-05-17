@@ -1,0 +1,476 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Parking Management System API",
+        "description": "API documentation for the Vehicle Parking Management System",
+        "version": "1.0.0",
+        "contact": {
+            "email": "admin@parkingsystem.com"
+        }
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8080/api",
+            "description": "Development server"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Authentication endpoints"
+        },
+        {
+            "name": "Users",
+            "description": "User management endpoints"
+        },
+        {
+            "name": "Vehicles",
+            "description": "Vehicle management endpoints"
+        },
+        {
+            "name": "Parking Slots",
+            "description": "Parking slot management endpoints"
+        },
+        {
+            "name": "Parking Records",
+            "description": "Parking record management endpoints"
+        }
+    ],
+    "paths": {
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login user",
+                "security": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "token": {
+                                            "type": "string"
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Create new user",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateUserDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User created successfully"
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get all users",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of users",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedUserResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/vehicles": {
+            "post": {
+                "tags": [
+                    "Vehicles"
+                ],
+                "summary": "Register new vehicle",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateVehicleDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Vehicle registered successfully"
+                    }
+                }
+            }
+        },
+        "/parking-slots": {
+            "post": {
+                "tags": [
+                    "Parking Slots"
+                ],
+                "summary": "Create new parking slot",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateParkingSlotDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Parking slot created successfully"
+                    }
+                }
+            }
+        },
+        "/parking-records/check-in": {
+            "post": {
+                "tags": [
+                    "Parking Records"
+                ],
+                "summary": "Check-in vehicle",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CheckInDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Vehicle checked in successfully"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "LoginDto": {
+                "type": "object",
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "type": "string",
+                        "minLength": 8
+                    }
+                }
+            },
+            "CreateUserDto": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "email",
+                    "password",
+                    "role"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 50
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "type": "string",
+                        "minLength": 8
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "ADMIN",
+                            "USER"
+                        ]
+                    }
+                }
+            },
+            "CreateVehicleDto": {
+                "type": "object",
+                "required": [
+                    "plateNumber",
+                    "brand",
+                    "model",
+                    "type",
+                    "size"
+                ],
+                "properties": {
+                    "plateNumber": {
+                        "type": "string",
+                        "minLength": 5,
+                        "maxLength": 10
+                    },
+                    "brand": {
+                        "type": "string",
+                        "minLength": 2
+                    },
+                    "model": {
+                        "type": "string",
+                        "minLength": 2
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "CAR",
+                            "MOTORCYCLE",
+                            "TRUCK",
+                            "VAN"
+                        ]
+                    },
+                    "size": {
+                        "type": "string",
+                        "enum": [
+                            "SMALL",
+                            "MEDIUM",
+                            "LARGE"
+                        ]
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "properties": {
+                            "color": {
+                                "type": "string",
+                                "minLength": 2
+                            }
+                        }
+                    }
+                }
+            },
+            "CreateParkingSlotDto": {
+                "type": "object",
+                "required": [
+                    "slotNumber",
+                    "type",
+                    "size",
+                    "status",
+                    "location"
+                ],
+                "properties": {
+                    "slotNumber": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 10
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "CAR",
+                            "MOTORCYCLE",
+                            "TRUCK",
+                            "VAN"
+                        ]
+                    },
+                    "size": {
+                        "type": "string",
+                        "enum": [
+                            "SMALL",
+                            "MEDIUM",
+                            "LARGE"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "AVAILABLE",
+                            "UNAVAILABLE",
+                            "MAINTENANCE"
+                        ]
+                    },
+                    "location": {
+                        "type": "string",
+                        "enum": [
+                            "NORTH",
+                            "SOUTH",
+                            "EAST",
+                            "WEST"
+                        ]
+                    }
+                }
+            },
+            "CheckInDto": {
+                "type": "object",
+                "required": [
+                    "vehicleId",
+                    "parkingSlotId"
+                ],
+                "properties": {
+                    "vehicleId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "parkingSlotId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "ADMIN",
+                            "USER"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "PaginatedUserResponse": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/User"
+                        }
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "total": {
+                                "type": "integer"
+                            },
+                            "page": {
+                                "type": "integer"
+                            },
+                            "totalPages": {
+                                "type": "integer"
+                            },
+                            "limit": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}
